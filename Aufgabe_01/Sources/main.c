@@ -79,6 +79,7 @@ GLOBAL Void main(Void) {
    TA1_init();    // set up Timer A1
 
    while(TRUE) {
+      /*
       Event_wait();
 
       if (Event_tst(EVENT_BTN2)) {
@@ -95,6 +96,8 @@ GLOBAL Void main(Void) {
       if (Event_err()) {
          SETBIT(P1OUT, BIT2); // LED on
       }
+      */
+       _low_power_mode_3();
    }
 }
 
