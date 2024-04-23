@@ -49,7 +49,6 @@ LOCAL Void GPIO_init(Void) {
    //               Bit 76543210    76543210
    PAOUT  = VAL_16BIT(0b00000000, 0b00000000); // clear all outputs
    PADIR  = VAL_16BIT(0b10000000, 0b00000100); // direction, set outputs
-   PAREN  = VAL_16BIT(0b00000000, 0b00000000); // without pull up
    PAIFG  = VAL_16BIT(0b00000000, 0b00000000); // clear all interrupt flags
    PAIES  = VAL_16BIT(0b00000000, 0b00000000);
    PAIE   = VAL_16BIT(0b00000000, 0b00000000); // disable all GPIO interrupts

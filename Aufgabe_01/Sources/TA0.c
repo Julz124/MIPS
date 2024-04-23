@@ -2,87 +2,52 @@
 #include "../base.h"
 #include "TA0.h"
 
-/*
- * Man soll sich eine geeignete Datenstruktur �berlegen,
- * die eine laufzeiteffiziente Ausf�hrung der ISR erm�glicht.
- */
+#define SCALING (2400 - 1)
+#define HIGH 0x80
+#define LOW  0x00
+#define MASK 0x7F
 
-#define HIGH 0x8000
-#define LOW  0x0000
+LOCAL const UChar blink_pattern1[] = {
+    HIGH | 8, LOW | 2, 0
+};
+LOCAL const UChar blink_pattern2[] = {
+    HIGH|3, LOW | 3, 0
+};
+LOCAL const UChar blink_pattern3[] = {
+    HIGH|1, LOW | 1,  0
+};
+LOCAL const UChar blink_pattern4[] = {
+    HIGH| 2, LOW | 8,   0
+};
+LOCAL const UChar blink_pattern5[] = {
+  HIGH |2, LOW| 2,  HIGH |2,  LOW| 8, 0
+};
+LOCAL const UChar blink_pattern6[] = {
+   HIGH |2, LOW | 2, HIGH |2, LOW| 2, HIGH|2 , LOW| 8, 0
+};
 
-#define ACKFRQ   614.4  // kHz
-#define TIMEBASE 10  // ms
-#define SCALING  ((UInt)(ACKFRQ * TIMEBASE))
-#define TICK(t)  (((SCALING / 8) / 8) * ((t) / TIMEBASE) - 1)
-#define TABSIZE 3
-#define TABSIZE_4 4
-#define TABSIZE_5 6
-#define TABSIZE_6 8
+LOCAL const UChar * const blink_ptr_arr[] = {
+    &blink_pattern1[0],
+    &blink_pattern2[0],
+    &blink_pattern3[0],
+    &blink_pattern4[0],
+    &blink_pattern5[0],
+    &blink_pattern6[0]
+};
 
-// Zeiten in der Tabelle sind in ms
-LOCAL const Int muster_1[TABSIZE] = {
-  HIGH | TICK(2000), // HIGH
-  LOW | TICK(500), // LOW
-  0
-}; //Muster 1
-
-LOCAL const Int muster_2[TABSIZE] = {
-    HIGH | TICK(1500),
-    LOW | TICK(1500),
-    0
-};  // Muster 2
-
-LOCAL const Int muster_3[TABSIZE] = {
-    HIGH | TICK(5),
-    LOW | TICK(5),
-    0
-};  // Muster 3
-
-LOCAL const Int muster_4[TABSIZE_4] = {
-    LOW | TICK(10),
-    HIGH | TICK(10),
-    LOW | TICK(30),
-    0
-}; // Muster 4
-
-LOCAL const Int muster_5[TABSIZE_5] = {
-    LOW | TICK(10),
-    HIGH | TICK(10),
-    LOW | TICK(10),
-    HIGH | TICK(10),
-    LOW | TICK(30),
-    0
-}; // Muster 5
-
-LOCAL const Int muster_6[TABSIZE_6] = {
-    LOW | TICK(10),
-    HIGH | TICK(10),
-    LOW | TICK(10),
-    HIGH | TICK(10),
-    LOW | TICK(10),
-    HIGH | TICK(10),
-    LOW | TICK(30),
-    0
-}; // Muster 6
-
-LOCAL const Int *muster[6];
-
-LOCAL const Int *ptr;
-//LOCAL const Int * start_ptr;
+LOCAL const UChar* cur_pattern_ptr;  // Zeiger auf das aktuelle Muster
+LOCAL UChar cnt_led;
+LOCAL UChar req_pattern_index;
 
 GLOBAL Void set_blink_muster(UInt arg) {
-    ptr  = muster[arg];
-    //start_ptr = muster[arg];
+    req_pattern_index = arg;
 }
 
 #pragma FUNC_ALWAYS_INLINE(TA0_init)
 GLOBAL Void TA0_init(Void) {
-    muster[0] = muster_1;
-    muster[1] = muster_2;
-    muster[2] = muster_3;
-    muster[3] = muster_4;
-    muster[4] = muster_5;
-    muster[5] = muster_6;
+   cnt_led              = 0;
+   req_pattern_index    = 0;
+
    CLRBIT(TA0CTL, MC0 | MC1   // stop mode
                   | TAIE      // disable interrupt
                   | TAIFG);   // clear interrupt flag
@@ -90,31 +55,34 @@ GLOBAL Void TA0_init(Void) {
                   | CAP       // compare mode
                   | CCIE      // disable interrupt
                   | CCIFG);   // clear interrupt flag
-   TA0CCR0  = 0;              // set up Compare Register
-   TA0EX0   = TAIDEX_7;       // set up expansion register
+
+   TA0CCR0  = SCALING;        // set up Compare Register with SCALING Factor
+   TA0EX0   = TAIDEX_7;       // set up expansion register. IDEX in TAxEX0: {/1, /2, /3, /4, /5, /6, /7, /8}
    TA0CTL   = TASSEL__ACLK    // 614.4 kHz
             | MC__UP          // Up Mode
-            | ID__8           // /8
+            | ID__8           // /8     ID in TAxCTL: {/1, /2, /4, /8}
             | TACLR;          // clear and start Timer
+
    SETBIT(TA0CTL, TAIE        // enable interrupt
                 | TAIFG);     // set interrupt flag
 
+   cur_pattern_ptr = blink_ptr_arr[0];
 }
 
 #pragma vector = TIMER0_A1_VECTOR
-__interrupt Void TIMER0_A1(Void) {
-   UInt cnt = *ptr++;
+__interrupt Void TIMER0_A1_ISR(Void) {
+    cnt_led++;
+    if (cnt_led == ((*cur_pattern_ptr) && MASK)) {
+        if(((*cur_pattern_ptr) && HIGH) == HIGH)
+            CLRBIT(P1OUT, BIT2);
+        else
+            SETBIT(P1OUT, BIT2);
+        cur_pattern_ptr++;
 
-   if (TSTBIT(cnt, HIGH)) {
-      SETBIT(P2OUT, BIT7);
-   } else {
-      CLRBIT(P2OUT, BIT7);
-   }
-
-   CLRBIT(TA0CTL, TAIFG);    // clear interrupt flag
-   TA0CCR0 = ~HIGH BAND cnt;
-
-   if (*ptr EQ 0) {
-      ptr = muster[0]; //start_ptr;
-   }
+        if (*cur_pattern_ptr == 0) {
+            cur_pattern_ptr = blink_ptr_arr[req_pattern_index];
+        }
+        cnt_led = 0;
+    }
+    CLRBIT(TA0CTL, TAIFG);
 }

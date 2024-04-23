@@ -3,56 +3,32 @@
 #include "TA1.h"
 #include "event.h"
 
-typedef struct {
-    volatile int counter;   // Counter im RAM
-    volatile enum {
-        BTN_IDLE,
-        BTN_PRESSED
-    } state;
-} Ram;
+#define BTN_MAX     2
+#define COUNT_MAX   5
 
-// Definition der Button-Konfigurationsstruktur
-typedef struct {
-    const char *port_id;   // Port ID im Flash-Speicher
-    int bit_position;       // Bitposition im Flash-Speicher
-    int n;                  // N-Wert im Flash-Speicher
-    int event;              // Event im Flash-Speicher
-    Ram * ram; // State im RAM
-} ButtonConfig;
+LOCAL Void debounce_Button(const Button* curr_button);
 
-Ram ram_button1 = {
-    .counter = 0,
-    .state = BTN_IDLE
-};
+LOCAL button_var BTN1_VAR;
+LOCAL const button_const BTN1_CONST = { BIT1, EVENT_BTN1, (const Char *) &P1IN };
+LOCAL const Button BTN_1 = { .btn_const = &BTN1_CONST, .btn_var = &BTN1_VAR };
 
-Ram ram_button2 = {
-    .counter = 0,
-    .state = BTN_IDLE
-};
+LOCAL button_var BTN2_VAR;
+LOCAL const button_const BTN2_CONST = { BIT0, EVENT_BTN2, (const Char *) &P1IN };
+LOCAL const Button BTN_2 = {.btn_const = &BTN2_CONST, .btn_var = &BTN2_VAR };
 
-// Definition der Button-Konfigurationen im Flash-Speicher
-const ButtonConfig btn1_config = {
-    .port_id = "BTN1",
-    .bit_position = BIT0,
-    .n = 1,
-    .event = 1,
-    .ram = &ram_button1,
-};
-
-const ButtonConfig btn2_config = {
-    .port_id = "BTN2",
-    .bit_position = BIT1,
-    .n = 2,
-    .event = 2,
-    .ram = &ram_button2,
-};
-
-// Pointer auf die Button-Konfigurationen im Flash-Speicher
-const ButtonConfig *const btn1_ptr = &btn1_config;
-const ButtonConfig *const btn2_ptr = &btn2_config;
+LOCAL const Button* const BUTTONS[] = { &BTN_1, &BTN_2};
+LOCAL UChar BTN_INDEX;
 
 #pragma FUNC_ALWAYS_INLINE(TA1_init)
 GLOBAL Void TA1_init(Void) {
+
+    BTN1_VAR.cnt = 0;
+    BTN2_VAR.cnt = 0;
+
+    BTN1_VAR.state = S0;
+    BTN2_VAR.state = S0;
+
+    BTN_INDEX = 0;
 
    CLRBIT(TA1CTL,   MC0 | MC1  // stop mode
                   | TAIE       // disable interrupt
@@ -75,40 +51,45 @@ GLOBAL Void TA1_init(Void) {
 #pragma vector = TIMER1_A1_VECTOR
 __interrupt Void TIMER1_A1_ISR(Void) {
 
-    // Prüfe, welcher Taster den Interrupt ausgelöst hat (BTN1 oder BTN2)
-    if (TSTBIT(BTN, btn1_ptr->bit_position) == 1) {
-        // Button 1 hat den Interrupt ausgelöst
-        if (btn1_ptr->ram->state == BTN_IDLE) {
-            // Der Button war im Ruhezustand (idle), jetzt ist er gedrückt
-            btn1_ptr->ram->state = BTN_PRESSED;
-            if (btn1_ptr->bit_position EQ 0) {
-                if (btn1_ptr->ram->counter EQ 0) {
-                    btn1_ptr->ram->state = BTN_IDLE;
-                } else {
-                    btn1_ptr->ram->counter -= 1;
-                }
-            } else {
-                if (btn1_ptr->ram->counter LT N-1) {
-                    btn1_ptr->ram->counter += 1;
-                } else {
-                    if (btn1_ptr->ram->state EQ BTN_IDLE) {
-                        btn1_ptr->ram->state = BTN_PRESSED;
-                        Event();
-                    }
-                }
-            } // Starte den Entprell-Counter
-        }
-        P1IFG &= ~btn1_ptr->bit_position; // Lösche das Interrupt-Flag für BTN1
+    debounce_Button(BUTTONS[BTN_INDEX]);
+
+    BTN_INDEX++;
+    if(BTN_INDEX >= BTN_MAX)
+    {
+        BTN_INDEX = 0;
     }
 
+    CLRBIT(TA1CTL, TAIFG);
+    __low_power_mode_off_on_exit();
+}
 
-    if (P1IFG & btn2_ptr->bit_position) {
-        // Button 2 hat den Interrupt ausgelöst
-        if (btn2_ptr->ram->state == BTN_IDLE) {
-            // Der Button war im Ruhezustand (idle), jetzt ist er gedrückt
-            btn2_ptr->ram->state = BTN_PRESSED;
-            btn2_ptr->ram->counter = 0; // Starte den Entprell-Counter
+#pragma FUNC_ALWAYS_INLINE(debounce_Button)
+LOCAL Void debounce_Button(const Button* curr_button) {
+
+    if(TSTBIT(*curr_button->btn_const->port, curr_button->btn_const->pin)) {
+        if(curr_button->btn_var->state == S0) {
+            if(curr_button->btn_var->cnt < COUNT_MAX) {
+                curr_button->btn_var->cnt++;
+            } else {
+                curr_button->btn_var->state = S1;
+                Event_set(curr_button->btn_const->event);
+            }
+        } else if(curr_button->btn_var->state == S1) {
+            if(curr_button->btn_var->cnt < COUNT_MAX) {
+                curr_button->btn_var->cnt++;
+            }
         }
-        P1IFG &= ~btn2_ptr->bit_position; // Lösche das Interrupt-Flag für BTN2
+    } else  {
+        if(curr_button->btn_var->state == S0) {
+            if(curr_button->btn_var->cnt > 0) {
+                curr_button->btn_var->cnt--;
+            }
+        } else if(curr_button->btn_var->state == S1) {
+            if(curr_button->btn_var->cnt > 0) {
+                curr_button->btn_var->cnt--;
+            } else {
+                curr_button->btn_var->state = S0;
+            }
+        }
     }
 }
