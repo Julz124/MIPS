@@ -7,32 +7,27 @@
 #define LOW  0x00
 #define MASK 0x7F
 
-LOCAL const UChar blink_pattern1[] = {
-    HIGH | 8, LOW | 2, 0
-};
-LOCAL const UChar blink_pattern2[] = {
-    HIGH|3, LOW | 3, 0
-};
-LOCAL const UChar blink_pattern3[] = {
-    HIGH|1, LOW | 1,  0
-};
-LOCAL const UChar blink_pattern4[] = {
-    HIGH| 2, LOW | 8,   0
-};
-LOCAL const UChar blink_pattern5[] = {
-  HIGH |2, LOW| 2,  HIGH |2,  LOW| 8, 0
-};
-LOCAL const UChar blink_pattern6[] = {
+LOCAL const UChar muster_all[] = {
+    HIGH | 8, LOW | 2, 0,
+
+    HIGH|3, LOW | 3, 0,
+
+    HIGH|1, LOW | 1,  0,
+
+    HIGH| 2, LOW | 8,   0,
+
+  HIGH |2, LOW| 2,  HIGH |2,  LOW| 8, 0,
+
    HIGH |2, LOW | 2, HIGH |2, LOW| 2, HIGH|2 , LOW| 8, 0
 };
 
 LOCAL const UChar * const blink_ptr_arr[] = {
-    &blink_pattern1[0],
-    &blink_pattern2[0],
-    &blink_pattern3[0],
-    &blink_pattern4[0],
-    &blink_pattern5[0],
-    &blink_pattern6[0]
+    &muster_all[0],
+    &muster_all[3],
+    &muster_all[6],
+    &muster_all[9],
+    &muster_all[12],
+    &muster_all[17]
 };
 
 LOCAL const UChar* cur_pattern_ptr;  // Zeiger auf das aktuelle Muster
@@ -72,8 +67,8 @@ GLOBAL Void TA0_init(Void) {
 #pragma vector = TIMER0_A1_VECTOR
 __interrupt Void TIMER0_A1_ISR(Void) {
     cnt_led++;
-    if (cnt_led == ((*cur_pattern_ptr) && MASK)) {
-        if(((*cur_pattern_ptr) && HIGH) == HIGH)
+    if (cnt_led == ((*cur_pattern_ptr) & MASK)) {
+        if(((*cur_pattern_ptr) & HIGH) == HIGH)
             CLRBIT(P1OUT, BIT2);
         else
             SETBIT(P1OUT, BIT2);

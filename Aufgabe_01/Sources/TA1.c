@@ -6,16 +6,19 @@
 #define BTN_MAX     2
 #define COUNT_MAX   5
 
-LOCAL Void debounce_Button(const Button* curr_button);
+LOCAL Void debounce_BTN(const Button* curr_button);
 
-LOCAL button_var BTN1_VAR;
+// Button 1
 LOCAL const button_const BTN1_CONST = { BIT1, EVENT_BTN1, (const Char *) &P1IN };
+LOCAL button_var BTN1_VAR;
 LOCAL const Button BTN_1 = { .btn_const = &BTN1_CONST, .btn_var = &BTN1_VAR };
 
-LOCAL button_var BTN2_VAR;
+// Button 2
 LOCAL const button_const BTN2_CONST = { BIT0, EVENT_BTN2, (const Char *) &P1IN };
+LOCAL button_var BTN2_VAR;
 LOCAL const Button BTN_2 = {.btn_const = &BTN2_CONST, .btn_var = &BTN2_VAR };
 
+// Button Array
 LOCAL const Button* const BUTTONS[] = { &BTN_1, &BTN_2};
 LOCAL UChar BTN_INDEX;
 
@@ -51,7 +54,7 @@ GLOBAL Void TA1_init(Void) {
 #pragma vector = TIMER1_A1_VECTOR
 __interrupt Void TIMER1_A1_ISR(Void) {
 
-    debounce_Button(BUTTONS[BTN_INDEX]);
+    debounce_BTN(BUTTONS[BTN_INDEX]);
 
     BTN_INDEX++;
     if(BTN_INDEX >= BTN_MAX)
@@ -59,12 +62,12 @@ __interrupt Void TIMER1_A1_ISR(Void) {
         BTN_INDEX = 0;
     }
 
-    CLRBIT(TA1CTL, TAIFG);
-    __low_power_mode_off_on_exit();
+    CLRBIT(TA1CTL, TAIFG);           // clear interrupt flag
+    __low_power_mode_off_on_exit();  // restore Active Mode on return
 }
 
-#pragma FUNC_ALWAYS_INLINE(debounce_Button)
-LOCAL Void debounce_Button(const Button* curr_button) {
+#pragma FUNC_ALWAYS_INLINE(debounce_BTN)
+LOCAL Void debounce_BTN(const Button* curr_button) {
 
     if(TSTBIT(*curr_button->btn_const->port, curr_button->btn_const->pin)) {
         if(curr_button->btn_var->state == S0) {
