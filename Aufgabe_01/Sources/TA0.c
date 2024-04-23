@@ -14,11 +14,11 @@ LOCAL const UChar muster_all[] = {
 
     HIGH|1, LOW | 1,  0,
 
-    HIGH| 2, LOW | 8,   0,
+    LOW | 2, HIGH| 2, LOW | 6,   0,
 
-  HIGH |2, LOW| 2,  HIGH |2,  LOW| 8, 0,
+    LOW | 2, HIGH |2, LOW| 2,  HIGH |2, LOW| 6, 0,
 
-   HIGH |2, LOW | 2, HIGH |2, LOW| 2, HIGH|2 , LOW| 8, 0
+    LOW | 2, HIGH |2, LOW | 2, HIGH |2, LOW| 2, HIGH|2 , LOW| 6, 0
 };
 
 LOCAL const UChar * const blink_ptr_arr[] = {
@@ -26,11 +26,11 @@ LOCAL const UChar * const blink_ptr_arr[] = {
     &muster_all[3],
     &muster_all[6],
     &muster_all[9],
-    &muster_all[12],
-    &muster_all[17]
+    &muster_all[13],
+    &muster_all[19]
 };
 
-LOCAL const UChar* cur_pattern_ptr;  // Zeiger auf das aktuelle Muster
+LOCAL const UChar* cur_pattern_ptr;
 LOCAL UChar cnt_led;
 LOCAL UChar req_pattern_index;
 
@@ -61,22 +61,25 @@ GLOBAL Void TA0_init(Void) {
    SETBIT(TA0CTL, TAIE        // enable interrupt
                 | TAIFG);     // set interrupt flag
 
+   SETBIT(P1OUT, BIT2);
    cur_pattern_ptr = blink_ptr_arr[0];
 }
 
 #pragma vector = TIMER0_A1_VECTOR
 __interrupt Void TIMER0_A1_ISR(Void) {
-    cnt_led++;
-    if (cnt_led == ((*cur_pattern_ptr) & MASK)) {
+    if (cnt_led != ((*cur_pattern_ptr) & MASK)) {
+        cnt_led++;
         if(((*cur_pattern_ptr) & HIGH) == HIGH)
-            CLRBIT(P1OUT, BIT2);
-        else
             SETBIT(P1OUT, BIT2);
+        else
+            CLRBIT(P1OUT, BIT2);
+    }
+    if(cnt_led == ((*cur_pattern_ptr) & MASK)) {
         cur_pattern_ptr++;
-
-        if (*cur_pattern_ptr == 0) {
-            cur_pattern_ptr = blink_ptr_arr[req_pattern_index];
-        }
+        cnt_led = 0;
+    }
+    if (*cur_pattern_ptr == 0) {
+        cur_pattern_ptr = blink_ptr_arr[req_pattern_index];
         cnt_led = 0;
     }
     CLRBIT(TA0CTL, TAIFG);
