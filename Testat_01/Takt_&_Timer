@@ -1,0 +1,22 @@
+
+CSCTL0 = CSKEY;             // freigeben der Clock
+CSCTL1 = DCOFSEL_3;         // DCLOCK mit 8 MHz
+CSCTL2 = SELA__DCOCLK       // ACLK -> DCO
+        | SELS__DCOCLK      // SMCLK -> DCO
+        | SELM__DCOCLK;     // MCLK -> DCO
+CSCTL3 = DIVA__16           // ACLK -> 8MHz / 16 = 500kHz
+        | DIVS__4           // SMCLK -> 8MHz / 4 = 2MHz
+        | DIVM__8;          // MCLK -> 8MHz / 8 = 1MHz
+CSCTL0_H = 0;               // sperren der Clock
+
+
+TA0CCR0 = 0;                // stopp Timer A
+CLRBIT(TA0CTL, TAIFG);      // clear overflow
+CLRBIT(TA0CCR0, CCIFG);
+TA0CCR0 = 625 - 1           // Compare -> (500kHz (ACLK) * 25ms (TIMEBASE)) / 5 / 4 = 625 := 40Hz
+TA0EX0  = TAIDEX_4;         // Expansion 5 -> {/1, /2, /3, /4, /5, /6, /7, /8}
+TA0CTL  = TASSEL__ACLK      // ACLK -> 500kHz
+        | MC__UP            // UP - mode
+        | ID__4;            // Divider 4 -> {/1, /2, /4, /8}
+SETBIT(TA0CTL, TACLR); 
+SETBIT(TA0CCTL0, CCIE);
