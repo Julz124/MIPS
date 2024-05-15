@@ -19,27 +19,27 @@ LOCAL button_var BTN2_VAR;
 LOCAL const Button BTN_2 = {.btn_const = &BTN2_CONST, .btn_var = &BTN2_VAR };
 
 // EX Btn 0
-LOCAL const button_const BTN3_CONST = { BIT0, EVENT_BTN3, (const Char *) &P3IN };
-LOCAL button_var BTN3_VAR;
-LOCAL const Button BTN_3 = {.btn_const = &BTN3_CONST, .btn_var = &BTN3_VAR };
+LOCAL const button_const EX_BTN0_CONST = { BIT0, EX_EVENT_BTN0, (const Char *) &P3IN };
+LOCAL button_var EX_BTN0_VAR;
+LOCAL const Button EX_BTN_0 = {.btn_const = &EX_BTN0_CONST, .btn_var = &EX_BTN0_VAR };
 
 // EX Btn 1
-LOCAL const button_const BTN4_CONST = { BIT1, EVENT_BTN4, (const Char *) &P3IN };
-LOCAL button_var BTN4_VAR;
-LOCAL const Button BTN_4 = {.btn_const = &BTN4_CONST, .btn_var = &BTN4_VAR };
+LOCAL const button_const EX_BTN1_CONST = { BIT1, EX_EVENT_BTN1, (const Char *) &P3IN };
+LOCAL button_var EX_BTN1_VAR;
+LOCAL const Button EX_BTN_1 = {.btn_const = &EX_BTN1_CONST, .btn_var = &EX_BTN1_VAR };
 
 // EX Btn 2
-LOCAL const button_const BTN5_CONST = { BIT2, EVENT_BTN5, (const Char *) &P3IN };
-LOCAL button_var BTN5_VAR;
-LOCAL const Button BTN_5 = {.btn_const = &BTN5_CONST, .btn_var = &BTN5_VAR };
+LOCAL const button_const EX_BTN2_CONST = { BIT2, EX_EVENT_BTN2, (const Char *) &P3IN };
+LOCAL button_var EX_BTN2_VAR;
+LOCAL const Button EX_BTN_2 = {.btn_const = &EX_BTN2_CONST, .btn_var = &EX_BTN2_VAR };
 
 // EX Btn 3
-LOCAL const button_const BTN6_CONST = { BIT3, EVENT_BTN6, (const Char *) &P3IN };
-LOCAL button_var BTN6_VAR;
-LOCAL const Button BTN_6 = {.btn_const = &BTN6_CONST, .btn_var = &BTN6_VAR };
+LOCAL const button_const EX_BTN3_CONST = { BIT3, EX_EVENT_BTN3, (const Char *) &P3IN };
+LOCAL button_var EX_BTN3_VAR;
+LOCAL const Button EX_BTN_3 = {.btn_const = &EX_BTN3_CONST, .btn_var = &EX_BTN3_VAR };
 
 // Button Array
-LOCAL const Button* const BUTTONS[] = { &BTN_1, &BTN_2, &BTN_3, &BTN_4, &BTN_5, &BTN_6};
+LOCAL const Button* const BUTTONS[] = { &BTN_1, &BTN_2, &EX_BTN_0, &EX_BTN_1, &EX_BTN_2, &EX_BTN_3};
 LOCAL UChar BTN_INDEX;
 
 #pragma FUNC_ALWAYS_INLINE(TA1_init)
@@ -47,17 +47,17 @@ GLOBAL Void TA1_init(Void) {
 
     BTN1_VAR.cnt = 0;
     BTN2_VAR.cnt = 0;
-    BTN3_VAR.cnt = 0;
-    BTN4_VAR.cnt = 0;
-    BTN5_VAR.cnt = 0;
-    BTN6_VAR.cnt = 0;
+    EX_BTN_0.cnt = 0;
+    EX_BTN_1.cnt = 0;
+    EX_BTN_2.cnt = 0;
+    EX_BTN_3.cnt = 0;
 
     BTN1_VAR.state = S0;
     BTN2_VAR.state = S0;
-    BTN3_VAR.state = S0;
-    BTN4_VAR.state = S0;
-    BTN5_VAR.state = S0;
-    BTN6_VAR.state = S0;
+    EX_BTN_0.state = S0;
+    EX_BTN_1.state = S0;
+    EX_BTN_2.state = S0;
+    EX_BTN_3.state = S0;
 
     BTN_INDEX = 0;
 
