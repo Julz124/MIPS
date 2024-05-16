@@ -1,10 +1,10 @@
 #include <msp430.h> 
 #include "..\base.h"
-#include "Handler.h"
 #include "event.h"
 #include "TA0.h"
 #include "TA1.h"
 #include "UCA1.h"
+#include "Handler.h"
 
 GLOBAL Int _system_pre_init(Void) {
    // stop watchdog timer
@@ -21,13 +21,15 @@ GLOBAL Int _system_pre_init(Void) {
 LOCAL Void CS_init(Void) {
    CSCTL0 = CSKEY;         // enable clock system
    CSCTL1 = DCOFSEL_3;     // DCO frequency = 8.0 MHz
+
                            // select clock sources
    CSCTL2 = SELA__XT1CLK   // ACLK  <- XT1
           | SELS__DCOCLK   // SMCLK <- DCO
           | SELM__DCOCLK;  // MCLK  <- DCO
+
                            // set frequency divider
    CSCTL3 = DIVA__8        // ACLK  : /8  = 614.4 kHz
-          | DIVS__16       // SMCLK : /16 = 500.0 kHz
+          | DIVS__32       // SMCLK : /32 = 250.0 kHz
           | DIVM__1;       // MCLK  : /1  =   8.0 MHz
 
    CSCTL4 = XT2OFF         // XT2 disabled
@@ -41,14 +43,17 @@ LOCAL Void CS_init(Void) {
 
 #pragma FUNC_ALWAYS_INLINE(GPIO_init)
 LOCAL Void GPIO_init(Void) {
-   // Port 1: Pin 0 => input,  BTN1
-   // Port 1: Pin 1 => input,  BTN2
-   // Port 1: Pin 2 => output, LED2, idle Low
-   // Port 2: Pin 7 => output, LED1, idle Low
-   // Port 2: Pin 3 => output, SPI.CS, idle High
-   // Port 2: Pin 4, 5 and 6 => SPI
-   // Port 3: Pin 4 => output, TEST
-   // Port 3: Pin 5 => output, TEST
+   
+ /* Port definition:
+  * Port 2: Pin 7 => output, LED1
+  * Port 1: Pin 2 => output, LED2
+  * Port 1: Pin 1 => input,  BTN1
+  * Port 1: Pin 0 => input,  BTN2
+  * Port 3: Pin 0 => input,  BTN3 (external button BTN 0)
+  * Port 3: Pin 1 => input,  BTN4 (external button BTN 1)
+  * Port 3: Pin 2 => input,  BTN5 (external button BTN 2)
+  * Port 3: Pin 3 => input,  BTN6 (external button BTN 3)
+  */
 
    //                   Port2       Port1
    //               Bit 76543210    76543210
@@ -63,7 +68,7 @@ LOCAL Void GPIO_init(Void) {
    //                   Port4       Port3
    //               Bit 76543210    76543210
    PBOUT  = VAL_16BIT(0b00000000, 0b00000000); // clear all outputs
-   PBDIR  = VAL_16BIT(0b00000000, 0b00110000); // direction, set outputs
+   PBDIR  = VAL_16BIT(0b00000000, 0b00000000); // direction, set outputs
    PBIFG  = VAL_16BIT(0b00000000, 0b00000000); // clear all interrupt flags
    PBIE   = VAL_16BIT(0b00000000, 0b00000000); // disable all GPIO interrupts
    PBSEL0 = VAL_16BIT(0b00000000, 0b00000000);
@@ -73,23 +78,23 @@ LOCAL Void GPIO_init(Void) {
 }
 
 GLOBAL Void main(Void) {
-   Int cnt = MUSTER1;
 
    CS_init();     // set up Clock System
    GPIO_init();   // set up Ports
    Event_init();
-   TA0_init();    // set up Timer A0
-   TA1_init();    // set up Timer A1
-   UCA1_init();   // set up SPI
-   Handler_init();
+   UCA1_init();   // set up SPI Interface
+   TA0_init();    // set up Timer A0 (LED     Interrupts)
+   TA1_init();    // set up Timer A1 (Buttons Interrupts)
+   Handler_init();// set up Handler
 
    while(TRUE) {
-      Event_wait();
 
-      Button_Handler();
-      Number_Handler();
-      AS1108_Handler();
-
+      Event_wait();        // wait for event
+      
+      Button_Handler();    // handle button events
+      Number_Handler();    // handle number events
+      AS1108_Handler();    // handle AS1108 events
+      
       if (Event_err()) {
          SETBIT(P1OUT, BIT2); // LED on
       }

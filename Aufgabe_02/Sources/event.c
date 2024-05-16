@@ -14,9 +14,7 @@ GLOBAL Void Event_init(Void) {
 GLOBAL Void Event_wait(Void) {
    _disable_interrupt();
    if (event EQ NO_EVENTS) {
-      CLRBIT(P3OUT, BIT5);
       _low_power_mode_3();
-      SETBIT(P3OUT, BIT5);
    }
    _enable_interrupt();
 }

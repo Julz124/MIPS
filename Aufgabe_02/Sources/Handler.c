@@ -5,87 +5,88 @@
 #include "TA0.h"
 
 #define DIGISIZE 4
-#define BASE     10
+#define BASE     10                  // base of the number system can be selected between 2 and 16
 
+// data type of a constant function pointer
 typedef Void (* VoidFunc)(Void);
+
+LOCAL Int   pattern_cnt;            // counter for blink pattern from task 1
+LOCAL UChar *seg_val;           // identify the external BCD Button that was pressed
+LOCAL UChar seg_vals[DIGISIZE];      // BCD counter
+
+// functional prototypes
 LOCAL Void State0(Void);
 LOCAL Void State1(Void);
-LOCAL VoidFunc state;
 
-LOCAL int pattern_cnt;  // Aktuelles Pattern
-
-LOCAL char curr_seg_val[DIGISIZE];   //Aktueller Zählwert der 7-Seg Anzeige
-LOCAL char* seg_val_idx;
-LOCAL VoidFunc state;   // Funktionspointer für 7-Seg Anzeige (Set and Reset)
+LOCAL VoidFunc state;               // function pointer to the current state function
 LOCAL UInt idx;                     // index for the BCD counter
 
-// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------- Button Handling
 
-static void EX_Button_Handler(TEvent arg, UChar ex_button){
+static void BCD_Button_Handler(TEvent arg, UChar bcd_button){
     if(Event_tst(arg)) {
-        Event_clr(arg);
-        *seg_val_idx = curr_seg_val[ex_button];
-        Event_set(EVENT_UPDATE_CNT);
+        Event_clr(arg);                 // clear the regarding button event
+        seg_val = &seg_vals[bcd_button];      // set the button index
+        Event_set(EVENT_UPDATE_CNT);    // set event for updating BCD
     }
 }
 
 GLOBAL Void Button_Handler(Void) {
 
-    //Eventhandler Button 1
-    if (Event_tst(EVENT_BTN2)){
+    if (Event_tst(EVENT_BTN2)) {
         Event_clr(EVENT_BTN2);
         if (++pattern_cnt GT MUSTER6) {
             pattern_cnt = MUSTER1;
-        }
-        set_blink_muster(pattern_cnt);
+         }
+         set_blink_muster(pattern_cnt);
     }
 
-    //Eventhandler Button 2
-    if (Event_tst(EVENT_BTN1)){
+    if (Event_tst(EVENT_BTN1)) {
         Event_clr(EVENT_BTN1);
         TGLBIT(P2OUT, BIT7);
     }
 
-    // Eventhandler External Buttons
-    EX_Button_Handler(EX_EVENT_BTN0, 0);
-    EX_Button_Handler(EX_EVENT_BTN1, 1);
-    EX_Button_Handler(EX_EVENT_BTN2, 2);
-    EX_Button_Handler(EX_EVENT_BTN3, 3);
+    BCD_Button_Handler(EVENT_BTN3, 0);
+    BCD_Button_Handler(EVENT_BTN4, 1);
+    BCD_Button_Handler(EVENT_BTN5, 2);
+    BCD_Button_Handler(EVENT_BTN6, 3);
 
 }
 
-// ----------------------------------------------------------------------------
-
+// ---------------------------------------------------------------------------- Number Handling
 
 GLOBAL Void Number_Handler(Void) {
     if (Event_tst(EVENT_UPDATE_CNT)){
         Event_clr(EVENT_UPDATE_CNT);
 
         if(!TSTBIT(P2OUT, BIT7)){ //increment
-            *seg_val_idx += 1;
+            *seg_val += 1;
 
-            if (*seg_val_idx == BASE) {
-                *seg_val_idx = 0;
-                seg_val_idx++ ;
+            if (*seg_val == BASE) {
+                *seg_val = 0;
+                seg_val++;
                 Event_set(EVENT_UPDATE_CNT);
                 return;
             }
 
         } else { //decrement
-            *seg_val_idx -= 1;
+            *seg_val -= 1;
 
-            if (*seg_val_idx >= BASE) {
-                *seg_val_idx = 0;
-                seg_val_idx-- ;
+            if (*seg_val >= BASE) {
+                *seg_val = BASE - 1;
+                seg_val++;
                 Event_set(EVENT_UPDATE_CNT);
                 return;
             }
         }
-        Event_set(EVENT_UPDATE_SEG);
+        if(!Event_tst(EVENT_UPDATE_CNT)) {
+            Event_set(EVENT_UPDATE_SEG);
+        }
     }
 }
 
-// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------- BCD Handling
+
 
 static void State0(void) {
     if (Event_tst(EVENT_UPDATE_SEG)) {
@@ -100,8 +101,8 @@ LOCAL Void State1(Void) {
     if (Event_tst(EVENT_DONE_SEG)) {
         Event_clr(EVENT_DONE_SEG);
         if (idx LE DIGISIZE) {
-            UChar ch = curr_seg_val[idx - 1];
-            //ch += '0';
+            UChar ch = seg_vals[idx - 1];
+            //ch += '0';                  // convert to ASCII? Will not display decimal point anymore (is set with D7 = 0 regarding datasheet)
             UCA1_emit(idx, ch);
             idx++;
         } else {
@@ -114,16 +115,17 @@ GLOBAL Void AS1108_Handler(Void) {
     (*state)();
 }
 
-// ----------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------- Initialisation
 
 GLOBAL Void Handler_init(Void) {
-    pattern_cnt = MUSTER1;
-    state = State0;
-    idx = 1;
-
-    curr_seg_val[0] = 4;
-    curr_seg_val[1] = 3;
-    curr_seg_val[2] = 2;
-    curr_seg_val[3] = 1;
+    pattern_cnt = MUSTER1;  // Should not be changed (because of initialisation)
+    state = State0;         // initial state
+    idx = 1;                // initial index
+    
+    seg_vals[0] = 0;         // initial BCD counter
+    seg_vals[1] = 0;
+    seg_vals[2] = 0;
+    seg_vals[3] = 0;
 }
 

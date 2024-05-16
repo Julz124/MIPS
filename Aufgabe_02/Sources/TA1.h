@@ -1,8 +1,14 @@
-#include "..\base.h"
+#include "../base.h"
 #include "event.h"
 
 #ifndef TA1_H_
 #define TA1_H_
+
+// Button State
+typedef enum {
+    S0,
+    S1
+}State;
 
 // Button constant values
 typedef struct {
@@ -14,7 +20,7 @@ typedef struct {
 // Button variable values
 typedef struct {
     Char            cnt;
-    Char            state;
+    State           state;
 }button_var;
 
 // Struct representing button
