@@ -2,25 +2,30 @@
 #include "Handler.h"
 #include "event.h"
 #include "UCA1.h"
-#include "TA1.c"
+#include "TA0.h"
 
 #define DIGISIZE 4
-#define BASE     10 // Basis des Zahlensystems kann zwischen 2 und 16 gewählt werden
+#define BASE     10
 
-LOCAL Uchar butn_idx;   // Welcher GPIO BTN gedrückt?
+typedef Void (* VoidFunc)(Void);
+LOCAL Void State0(Void);
+LOCAL Void State1(Void);
+LOCAL VoidFunc state;
+
 LOCAL int pattern_cnt;  // Aktuelles Pattern
-LOCAL int curr_seg_val[DIGISIZE];   //Aktueller Zählwert der 7-Seg Anzeige
 
+LOCAL char curr_seg_val[DIGISIZE];   //Aktueller Zählwert der 7-Seg Anzeige
+LOCAL char* seg_val_idx;
 LOCAL VoidFunc state;   // Funktionspointer für 7-Seg Anzeige (Set and Reset)
-LOCAL UInt idx; // Indexcounter 7-Seg Anzeige
+LOCAL UInt idx;                     // index for the BCD counter
 
 // ----------------------------------------------------------------------------
 
-satic void GPIO_BTN_Handler (TEvent arg){
-    if (Event_tst(arg)){
+static void EX_Button_Handler(TEvent arg, UChar ex_button){
+    if(Event_tst(arg)) {
         Event_clr(arg);
-            btn_idx = gpio_btn;
-            Event_set(EVENT_UPDATE_CNT);
+        *seg_val_idx = curr_seg_val[ex_button];
+        Event_set(EVENT_UPDATE_CNT);
     }
 }
 
@@ -41,10 +46,11 @@ GLOBAL Void Button_Handler(Void) {
         TGLBIT(P2OUT, BIT7);
     }
 
-    GPIO_BTN_Handler(EX_EVENT_BTN0);
-    GPIO_BTN_Handler(EX_EVENT_BTN1);
-    GPIO_BTN_Handler(EX_EVENT_BTN2);
-    GPIO_BTN_Handler(EX_EVENT_BTN3);
+    // Eventhandler External Buttons
+    EX_Button_Handler(EX_EVENT_BTN0, 0);
+    EX_Button_Handler(EX_EVENT_BTN1, 1);
+    EX_Button_Handler(EX_EVENT_BTN2, 2);
+    EX_Button_Handler(EX_EVENT_BTN3, 3);
 
 }
 
@@ -55,23 +61,27 @@ GLOBAL Void Number_Handler(Void) {
     if (Event_tst(EVENT_UPDATE_CNT)){
         Event_clr(EVENT_UPDATE_CNT);
 
-        if(!TSTBIT(P2OUT, BIT7)){
-            curr_seg_val[0] += EX_BTN_0.btn_var;
+        if(!TSTBIT(P2OUT, BIT7)){ //increment
+            *seg_val_idx += 1;
 
-
-
-            curr_seg_val[butn_idx] += 1;
-            curr_seg_val[butn_idx] == BASE;
-            curr_seg_val[butn_idx] = 0;
-            curr_seg_val[butn_idx+1] += 1
+            if (*seg_val_idx == BASE) {
+                *seg_val_idx = 0;
+                seg_val_idx++ ;
+                Event_set(EVENT_UPDATE_CNT);
+                return;
+            }
 
         } else { //decrement
+            *seg_val_idx -= 1;
 
-
+            if (*seg_val_idx >= BASE) {
+                *seg_val_idx = 0;
+                seg_val_idx-- ;
+                Event_set(EVENT_UPDATE_CNT);
+                return;
+            }
         }
-
         Event_set(EVENT_UPDATE_SEG);
-
     }
 }
 
@@ -89,27 +99,31 @@ static void State0(void) {
 LOCAL Void State1(Void) {
     if (Event_tst(EVENT_DONE_SEG)) {
         Event_clr(EVENT_DONE_SEG);
-        if (idx LE DIGISIZE)
-        {
-            UChar ch = bcd_cnt[idx - 1];
-            //ch += '0';                  // convert to ASCII? Will not display decimal point anymore (is set with D7 = 0 regarding datasheet)
+        if (idx LE DIGISIZE) {
+            UChar ch = curr_seg_val[idx - 1];
+            //ch += '0';
             UCA1_emit(idx, ch);
             idx++;
-        }
-        else
-        {
+        } else {
             state = State0;
         }
     }
 }
 
 GLOBAL Void AS1108_Handler(Void) {
-    (*state)()
+    (*state)();
 }
 
 // ----------------------------------------------------------------------------
 
 GLOBAL Void Handler_init(Void) {
+    pattern_cnt = MUSTER1;
+    state = State0;
+    idx = 1;
 
+    curr_seg_val[0] = 4;
+    curr_seg_val[1] = 3;
+    curr_seg_val[2] = 2;
+    curr_seg_val[3] = 1;
 }
 

@@ -47,17 +47,17 @@ GLOBAL Void TA1_init(Void) {
 
     BTN1_VAR.cnt = 0;
     BTN2_VAR.cnt = 0;
-    EX_BTN_0.cnt = 0;
-    EX_BTN_1.cnt = 0;
-    EX_BTN_2.cnt = 0;
-    EX_BTN_3.cnt = 0;
+    EX_BTN0_VAR.cnt = 0;
+    EX_BTN1_VAR.cnt = 0;
+    EX_BTN2_VAR.cnt = 0;
+    EX_BTN3_VAR.cnt = 0;
 
-    BTN1_VAR.state = S0;
-    BTN2_VAR.state = S0;
-    EX_BTN_0.state = S0;
-    EX_BTN_1.state = S0;
-    EX_BTN_2.state = S0;
-    EX_BTN_3.state = S0;
+    BTN1_VAR.state = 0;
+    BTN2_VAR.state = 0;
+    EX_BTN0_VAR.state = 0;
+    EX_BTN1_VAR.state = 0;
+    EX_BTN2_VAR.state = 0;
+    EX_BTN3_VAR.state = 0;
 
     BTN_INDEX = 0;
 
@@ -85,8 +85,7 @@ __interrupt Void TIMER1_A1_ISR(Void) {
     debounce_BTN(BUTTONS[BTN_INDEX]);
 
     BTN_INDEX++;
-    if(BTN_INDEX >= BTN_MAX)
-    {
+    if(BTN_INDEX >= BTN_MAX) {
         BTN_INDEX = 0;
     }
 
@@ -98,28 +97,28 @@ __interrupt Void TIMER1_A1_ISR(Void) {
 LOCAL Void debounce_BTN(const Button* curr_button) {
 
     if(TSTBIT(*curr_button->btn_const->port, curr_button->btn_const->pin)) {
-        if(curr_button->btn_var->state == S0) {
+        if(curr_button->btn_var->state == 0) {
             if(curr_button->btn_var->cnt < COUNT_MAX) {
                 curr_button->btn_var->cnt++;
             } else {
-                curr_button->btn_var->state = S1;
+                curr_button->btn_var->state = 1;
                 Event_set(curr_button->btn_const->event);
             }
-        } else if(curr_button->btn_var->state == S1) {
+        } else if(curr_button->btn_var->state == 1) {
             if(curr_button->btn_var->cnt < COUNT_MAX) {
                 curr_button->btn_var->cnt++;
             }
         }
     } else  {
-        if(curr_button->btn_var->state == S0) {
+        if(curr_button->btn_var->state == 0) {
             if(curr_button->btn_var->cnt > 0) {
                 curr_button->btn_var->cnt--;
             }
-        } else if(curr_button->btn_var->state == S1) {
+        } else if(curr_button->btn_var->state == 1) {
             if(curr_button->btn_var->cnt > 0) {
                 curr_button->btn_var->cnt--;
             } else {
-                curr_button->btn_var->state = S0;
+                curr_button->btn_var->state = 0;
             }
         }
     }

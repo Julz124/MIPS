@@ -4,12 +4,6 @@
 #ifndef TA1_H_
 #define TA1_H_
 
-// Button State
-typedef enum {
-    S0,
-    S1
-}State;
-
 // Button constant values
 typedef struct {
     const UInt      pin;
@@ -20,7 +14,7 @@ typedef struct {
 // Button variable values
 typedef struct {
     Char            cnt;
-    State           state;
+    Char            state;
 }button_var;
 
 // Struct representing button
