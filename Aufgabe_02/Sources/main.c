@@ -91,9 +91,9 @@ GLOBAL Void main(Void) {
 
       Event_wait();        // wait for event
       
-      Button_Handler();    // handle button events
-      Number_Handler();    // handle number events
       AS1108_Handler();    // handle AS1108 events
+      Number_Handler();    // handle number events
+      Button_Handler();    // handle button events
       
       if (Event_err()) {
          SETBIT(P1OUT, BIT2); // LED on

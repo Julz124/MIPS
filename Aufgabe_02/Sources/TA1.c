@@ -3,9 +3,6 @@
 #include "TA1.h"
 #include "event.h"
 
-#define BTN_MAX     6
-#define COUNT_MAX   5
-
 LOCAL Void debounce_BTN(const Button* curr_button);
 
 // ---------------------------------------------------------------------------------> Definition of Button 1
@@ -52,12 +49,12 @@ GLOBAL Void TA1_init(Void) {
    BTN5_VAR.cnt = 0;
    BTN6_VAR.cnt = 0;
 
-   BTN1_VAR.state = S0;
-   BTN2_VAR.state = S0;
-   BTN3_VAR.state = S0;
-   BTN4_VAR.state = S0;
-   BTN5_VAR.state = S0;
-   BTN6_VAR.state = S0;
+   BTN1_VAR.state = 0;
+   BTN2_VAR.state = 0;
+   BTN3_VAR.state = 0;
+   BTN4_VAR.state = 0;
+   BTN5_VAR.state = 0;
+   BTN6_VAR.state = 0;
    
    BTN_INDEX = 0;
 
@@ -81,10 +78,11 @@ GLOBAL Void TA1_init(Void) {
 
    #pragma vector = TIMER1_A1_VECTOR
    __interrupt Void TIMER1_A1_ISR(Void) {
+       const char BTN_MAX   =  6;
 
        TA1CCR0  = 2-1;
 
-       debounce_BTN(BUTTONS[BTN_INDEX]);
+   debounce_BTN(BUTTONS[BTN_INDEX]);
 
        BTN_INDEX++;
        if(BTN_INDEX >= BTN_MAX) {
@@ -98,30 +96,30 @@ GLOBAL Void TA1_init(Void) {
 
    #pragma FUNC_ALWAYS_INLINE(debounce_BTN)
    LOCAL Void debounce_BTN(const Button* curr_button) {
-
+       const char COUNT_MAX =  5;
        if(TSTBIT(*curr_button->btn_const->port, curr_button->btn_const->pin)) {
-           if(curr_button->btn_var->state == S0) {
+           if(curr_button->btn_var->state == 0) {
                if(curr_button->btn_var->cnt < COUNT_MAX) {
                    curr_button->btn_var->cnt++;
                } else {
-                   curr_button->btn_var->state = S1;
+                   curr_button->btn_var->state = 1;
                    Event_set(curr_button->btn_const->event);
                }
-           } else if(curr_button->btn_var->state == S1) {
+           } else if(curr_button->btn_var->state >= 1) {
                if(curr_button->btn_var->cnt < COUNT_MAX) {
                    curr_button->btn_var->cnt++;
                }
            }
        } else  {
-           if(curr_button->btn_var->state == S0) {
+           if(curr_button->btn_var->state == 0) {
                if(curr_button->btn_var->cnt > 0) {
                    curr_button->btn_var->cnt--;
                }
-           } else if(curr_button->btn_var->state == S1) {
+           } else if(curr_button->btn_var->state >= 1) {
                if(curr_button->btn_var->cnt > 0) {
                    curr_button->btn_var->cnt--;
                } else {
-                   curr_button->btn_var->state = S0;
+                   curr_button->btn_var->state = 0;
                }
            }
        }

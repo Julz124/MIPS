@@ -5,7 +5,6 @@
 #define SCALING (2400 - 1)
 #define HIGH 0x80
 #define LOW  0x00
-#define MASK 0x7F
 
 LOCAL const UChar muster_all[] = {
     HIGH | 8, LOW | 2, 0,
@@ -67,6 +66,7 @@ GLOBAL Void TA0_init(Void) {
 
 #pragma vector = TIMER0_A1_VECTOR
 __interrupt Void TIMER0_A1_ISR(Void) {
+    const char MASK = 0x7F;
     if (cnt_led != ((*cur_pattern_ptr) & MASK)) {
         cnt_led++;
         if(((*cur_pattern_ptr) & HIGH) == HIGH)

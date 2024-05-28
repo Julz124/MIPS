@@ -14,12 +14,8 @@ LOCAL Int   pattern_cnt;            // counter for blink pattern from task 1
 LOCAL UChar *seg_val;           // identify the external BCD Button that was pressed
 LOCAL UChar seg_vals[DIGISIZE];      // BCD counter
 
-// functional prototypes
-LOCAL Void State0(Void);
-LOCAL Void State1(Void);
-
-LOCAL VoidFunc state;               // function pointer to the current state function
-LOCAL UInt idx;                     // index for the BCD counter
+LOCAL UChar state;               // function pointer to the current state function
+LOCAL UChar idx;                     // index for the BCD counter
 
 // ---------------------------------------------------------------------------- Button Handling
 
@@ -88,39 +84,33 @@ GLOBAL Void Number_Handler(Void) {
 // ---------------------------------------------------------------------------- BCD Handling
 
 
-static void State0(void) {
-    if (Event_tst(EVENT_UPDATE_SEG)) {
-        Event_clr(EVENT_UPDATE_SEG);
-        idx = 1;
-        state = State1;
-        Event_set(EVENT_DONE_SEG);
-    }
-}
-
-LOCAL Void State1(Void) {
-    if (Event_tst(EVENT_DONE_SEG)) {
-        Event_clr(EVENT_DONE_SEG);
-        if (idx LE DIGISIZE) {
-            UChar ch = seg_vals[idx - 1];
-            //ch += '0';                  // convert to ASCII? Will not display decimal point anymore (is set with D7 = 0 regarding datasheet)
-            UCA1_emit(idx, ch);
-            idx++;
-        } else {
-            state = State0;
+GLOBAL Void AS1108_Handler(Void) {
+    if (state == 0) {
+        if (Event_tst(EVENT_UPDATE_SEG)) {
+            Event_clr(EVENT_UPDATE_SEG);
+            idx = 1;
+            state = 1;
+            Event_set(EVENT_DONE_SEG);
+        }
+    } else if (state == 1) {
+        if (Event_tst(EVENT_DONE_SEG)) {
+            Event_clr(EVENT_DONE_SEG);
+            if (idx <= DIGISIZE) {
+                UChar ch = seg_vals[(UInt) idx - 1];
+                UCA1_emit(idx, ch);
+                idx++;
+            } else {
+                state = 0;
+            }
         }
     }
 }
-
-GLOBAL Void AS1108_Handler(Void) {
-    (*state)();
-}
-
 
 // ---------------------------------------------------------------------------- Initialisation
 
 GLOBAL Void Handler_init(Void) {
     pattern_cnt = MUSTER1;  // Should not be changed (because of initialisation)
-    state = State0;         // initial state
+    state = 0;         // initial state
     idx = 1;                // initial index
     
     seg_vals[0] = 0;         // initial BCD counter
