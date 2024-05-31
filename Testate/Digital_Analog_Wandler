@@ -1,0 +1,41 @@
+In einem Embedded-System mit dem Mikrocontroller MSP430FR5729 sollen digitale Werte in analoge Signale 
+mit der Hilfe eines externen 8-Bit-Digital-Analog-Wand-lers (DAC) umgewandelt werden. 
+Dabei überträgt der Mikrocontroller einzelne Bytes zum DAC über einen syn-chronen SPI-Bus. 
+Das Timing-Diagramm eines SPI-Trans-fers zum DAC ist darunter zu sehen.
+Aus der Analyse des Timing-Diagramms ergeben sich folgende 
+
+Informationen: 
+(1) der DAC kann Daten nur empfangen aber nicht senden. 
+(2) Wenn kein SPI-Transfer stattfindet, steht der SPI-Takt SCLK auf Low. 
+(3) Die Übernahme der Daten im DAC erfolgt mit der fallenden Flanke vom SPI-Takt. 
+(4) Während eines SPI-Transfers erwartet der DAC das LSB als erstes Bit.
+
+Geben Sie die dafür notwendigen Initialisierungsschritte in einer Folge von Zuweisungen in C an. 
+Achten Sie auf die korrekte Schreibweise von Registernamen und Konstanten. 
+Gehen Sie davon aus, dass der DAC mit derjenigen Geschwindigkeit arbeiten kann, mit der auch der MCLK im Mikrocontroller eingestellt ist.
+
+// set up Pin 3 at Port 2 => CS output, High
+CLRBIT(P2OUT,  BIT3);
+SETBIT(P2DIR,  BIT3);
+CLRBIT(P2SEL0, BIT3);
+CLRBIT(P2SEL1, BIT3);
+CLRBIT(P2REN,  BIT3);
+
+// set up Pins 4, 5 and 6 at Port 2
+CLRBIT(P2SEL0, BIT4 + BIT5 + BIT6);
+SETBIT(P2SEL1, BIT4 + BIT5 + BIT6);
+
+// set up Universal Serial Communication Interface A
+SETBIT(UCA1CTLW0, UCSWRST);        // UCA1 software reset
+UCA1BRW = 0
+
+// in Übereinstimmung mit dem SPI-Timing-Diagramm von AS1108
+UCA1CTLW0 = 1 // 15: clock phase select: rising edge
+        | 0 // 14: clock polarity: inactive low
+        | 0 // 13: MSB first
+        | 0 // 12: 8-bit data
+        | UCMST // 11: SPI master mode
+        | UCMODE_0 // 10-9: mode select: 3-pin SPI
+        | UCSYNC // 8: synchronous mode enable
+        | UCSSEL__ACLK // 7-6: clock source select
+        | 0; // 0: release the UCA0 for operation
