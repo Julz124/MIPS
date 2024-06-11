@@ -112,8 +112,6 @@ GLOBAL Void AS1108_Handler(Void) {
 
 GLOBAL Void get_bcd_cnt(Void) {
 
-    // returns the BCD counter as a string with UART line ending (LSB first) e.g. "1234\r\n"
-    // the string is stored in bcd_uart
     bcd_uart[0] = seg_vals[3] + '0';
     bcd_uart[1] = seg_vals[2] + '0';
     bcd_uart[2] = seg_vals[1] + '0';

@@ -46,20 +46,19 @@ __interrupt Void UCA0_ISR(Void) {
 
    switch (__even_in_range(UCA0IV, 0x04)) {
 
-      case 0x02:  // ---------------------------------------------------------> Vector 2: Receive buffer full
-
-         if (TSTBIT(UCA0STATW, UCBRK)) {  // ---------------------- break errror
+      case 0x02:
+         if (TSTBIT(UCA0STATW, UCBRK)) {
             set_error(BREAK_ERROR);
-            Char ch = UCA0RXBUF;          // dummy read
+            Char ch = UCA0RXBUF;
             return;
          }
 
-         if (TSTBIT(UCA0STATW, UCRXERR)) { // -------------------- receive error
-            Char ch = UCA0RXBUF; // dummy read
+         if (TSTBIT(UCA0STATW, UCRXERR)) {
+            Char ch = UCA0RXBUF;
             return;
          }
 
-         ch = UCA0RXBUF;                  // read character
+         ch = UCA0RXBUF;
 
          if (between('0', ch, '9')) {
             if(i < DIGISIZE){
@@ -87,22 +86,20 @@ __interrupt Void UCA0_ISR(Void) {
             return;
          }
 
-         //CLRBIT(UCA0IE, UCRXIE);        // receive interrupt disable
-
-         __low_power_mode_off_on_exit();// restore Active Mode on return
+         __low_power_mode_off_on_exit();
 
          break;
 
-      case 0x04:  // ---------------------------------------------------------> Vector 4: Transmit buffer empty
+      case 0x04:
 
-         if (TSTBIT(UCA0STATW, UCBRK)) {  // ---------------------- break errror
-            Char ch = UCA0RXBUF;          // dummy read
+         if (TSTBIT(UCA0STATW, UCBRK)) {
+            Char ch = UCA0RXBUF;
             set_error(BREAK_ERROR);
             return;
          }
 
-         if (TSTBIT(UCA0STATW, UCRXERR)) { // -------------------- receive error
-            Char ch = UCA0RXBUF; // dummy read
+         if (TSTBIT(UCA0STATW, UCRXERR)) {
+            Char ch = UCA0RXBUF;
             set_error(FROVPAR_ERROR);
             return;
          }
@@ -111,10 +108,10 @@ __interrupt Void UCA0_ISR(Void) {
             UCA0TXBUF = *ptr++;
             return;
          }
-         CLRBIT(UCA0IE, UCTXIE);                      // transmit interrupt disable
-         Char ch = UCA0RXBUF;                         // dummy read
+         CLRBIT(UCA0IE, UCTXIE);
+         Char ch = UCA0RXBUF;
          set_error(NO_ERROR);
-         SETBIT(UCA0IE, UCRXIE);                      // receive interrupt enable
+         SETBIT(UCA0IE, UCRXIE);
          break;
    }
 }
@@ -124,7 +121,7 @@ GLOBAL Int UCA0_printf(const Char * str) {
       return -1;
    }
    ptr = str;
-   SETBIT(UCA0IFG, UCTXIFG); // set UCTXIFG
-   SETBIT(UCA0IE,  UCTXIE);  // enable transmit interrupt
+   SETBIT(UCA0IFG, UCTXIFG);
+   SETBIT(UCA0IE,  UCTXIE);
    return 0;
 }

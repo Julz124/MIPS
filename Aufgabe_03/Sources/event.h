@@ -34,12 +34,12 @@ typedef unsigned int TEvent;
 #define EVENT_RXD         EVENT_8   // Receiver event for uart
 #define EVENT_TXD         EVENT_9   // Transmitter event for uart
 
-#define EVEMT_IMA   EVENT_10
-#define EVENT_UPDATE_SEG  EVENT_11
-#define EVENT_DONE_SEG    EVENT_12
-#define EVENT_UPDATE_CNT  EVENT_13
+#define EVENT_UPDATE_SEG  EVENT_10
+#define EVENT_DONE_SEG    EVENT_15
+#define EVENT_UPDATE_CNT  EVENT_12
 
 #define EVENT_ERR         EVENT_16  // Error event
+
 #define NO_ERROR          6        // no error
 #define BYTE_RECEIVED     5        // byte received
 #define BUFFER_ERROR      4        // buffer error (e.g. to many bytes received)
