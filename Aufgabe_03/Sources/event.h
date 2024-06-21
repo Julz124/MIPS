@@ -33,7 +33,7 @@ typedef unsigned int TEvent;
 #define EVENT_RXD         EVENT_7   // Receiver event for uart
 #define EVENT_TXD         EVENT_8   // Transmitter event for uart
 
-#define EVENT_UPDATE_SEG  EVENT_9
+#define EVENT_UPDATE_SEG  EVENT_10
 #define EVENT_DONE_SEG    EVENT_11
 #define EVENT_UPDATE_CNT  EVENT_12
 
@@ -52,6 +52,6 @@ EXTERN Void Event_set(TEvent);
 EXTERN Void Event_clr(TEvent);
 EXTERN Bool Event_tst(TEvent);
 EXTERN Bool Event_err(Void);
-EXTERN TEvent get_btn_events(UInt);
+EXTERN TEvent get_events(TEvent);
 
 #endif /* EVENT_H_ */

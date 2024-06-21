@@ -10,7 +10,7 @@
 // data type of a constant function pointer
 typedef Void (* VoidFunc)(Void);
 
-LOCAL UChar *seg_val;           // identify the external BCD Button that was pressed
+LOCAL UChar seg_val;           // identify the external BCD Button that was pressed
 LOCAL UChar seg_vals[DIGISIZE];      // BCD counter
 LOCAL Char  bcd_uart[DIGISIZE + 3]; // BCD counter array for UART TX (2 additional chars for '\r' and '\n')
 
@@ -18,61 +18,78 @@ LOCAL UChar state;               // function pointer to the current state functi
 LOCAL UChar idx;                     // index for the BCD counter
 
 LOCAL UInt error;                   // error variable for UART
-LOCAL TEvent local_event;
 
 // ---------------------------------------------------------------------------- Button Handling
 
-
-static void BCD_Button_Handler(TEvent arg, UChar bcd_button){
-    if(Event_tst(arg)) {
-        Event_clr(arg);                 // clear the regarding button event
-        seg_val = &seg_vals[bcd_button];      // set the button index
-        Event_set(EVENT_UPDATE_CNT);    // set event for updating BCD
-    }
-}
-
 GLOBAL Void Button_Handler(Void) {
 
-    local_event = get_events(0x003F);
+    TEvent local_btn_event = get_events(0x003F);
 
-    if (local_event AND EVENT_BTN1) {
-        local_event = local_event XOR EVENT_BTN1;
+    if (TSTBIT(local_btn_event, EVENT_BTN1)) {
         TGLBIT(P2OUT, BIT7);
+        CLRBIT(local_btn_event, EVENT_BTN1);
     }
 
-    /*
-    BCD_Button_Handler(EVENT_BTN3, 0);
-    BCD_Button_Handler(EVENT_BTN4, 1);
-    BCD_Button_Handler(EVENT_BTN5, 2);
-    BCD_Button_Handler(EVENT_BTN6, 3);
-    */
-
+    if (TSTBIT(local_btn_event, EVENT_BTN3 + EVENT_BTN4 + EVENT_BTN5 + EVENT_BTN6)) {
+            seg_val = (local_btn_event >> 2) & 0xF;
+            CLRBIT(local_btn_event, EVENT_BTN3 + EVENT_BTN4 + EVENT_BTN5 + EVENT_BTN6);
+            Event_set(EVENT_UPDATE_CNT);
+        }
 }
 
 // ---------------------------------------------------------------------------- Number Handling
 
 GLOBAL Void Number_Handler(Void) {
-    if (Event_tst(EVENT_UPDATE_CNT)){
-        Event_clr(EVENT_UPDATE_CNT);
+
+    TEvent local_event = get_events(0x0800);
+
+    if (TSTBIT(local_event, EVENT_UPDATE_CNT)){
+        CLRBIT(local_event, EVENT_UPDATE_CNT);
 
         if(!TSTBIT(P2OUT, BIT7)){ //increment
-            *seg_val += 1;
+            seg_vals[0] += seg_val & 0x1;
+            seg_vals[1] += (seg_val >> 1) & 0x1;
+            seg_vals[2] += (seg_val >> 2) & 0x1;
+            seg_vals[3] += (seg_val >> 3) & 0x1;
+            seg_val = 0x00;
 
-            if (*seg_val == BASE) {
-                *seg_val = 0;
-                seg_val++;
-                Event_set(EVENT_UPDATE_CNT);
-                return;
+            if (seg_vals[0] == BASE) {
+                seg_vals[0] = 0;
+                seg_vals[1] += 1;
+            }
+            if (seg_vals[1] == BASE) {
+                seg_vals[1] = 0;
+                seg_vals[2] += 1;
+            }
+            if (seg_vals[2] == BASE) {
+                seg_vals[2] = 0;
+                seg_vals[3] += 1;
+            }
+            if (seg_vals[3] == BASE) {
+                seg_vals[3] = 0;
             }
 
         } else { //decrement
-            *seg_val -= 1;
+            seg_vals[0] -= seg_val & 0x1;
+            seg_vals[1] -= (seg_val >> 1) & 0x1;
+            seg_vals[2] -= (seg_val >> 2) & 0x1;
+            seg_vals[3] -= (seg_val >> 3) & 0x1;
+            seg_val = 0x00;
 
-            if (*seg_val >= BASE) {
-                *seg_val = BASE - 1;
-                seg_val++;
-                Event_set(EVENT_UPDATE_CNT);
-                return;
+            if (seg_vals[0] >= BASE) {
+                seg_vals[0] = 9;
+                seg_vals[1] -= 1;
+            }
+            if (seg_vals[1] >= BASE) {
+                seg_vals[1] = 9;
+                seg_vals[2] -= 1;
+            }
+            if (seg_vals[2] >= BASE) {
+                seg_vals[2] = 9;
+                seg_vals[3] -= 1;
+            }
+            if (seg_vals[3] >= BASE) {
+                seg_vals[3] = 9;
             }
         }
         if(!Event_tst(EVENT_UPDATE_CNT)) {
@@ -85,16 +102,19 @@ GLOBAL Void Number_Handler(Void) {
 // ---------------------------------------------------------------------------- BCD Handling
 
 GLOBAL Void AS1108_Handler(Void) {
+
+    TEvent local_event = get_events(0x0600);
+
     if (state == 0) {
-        if (Event_tst(EVENT_UPDATE_SEG)) {
-            Event_clr(EVENT_UPDATE_SEG);
+        if (TSTBIT(local_event, EVENT_UPDATE_SEG)) {
+            CLRBIT(local_event, EVENT_UPDATE_SEG);
             idx = 1;
             state = 1;
             Event_set(EVENT_DONE_SEG);
         }
     } else if (state == 1) {
-        if (Event_tst(EVENT_DONE_SEG)) {
-            Event_clr(EVENT_DONE_SEG);
+        if (TSTBIT(local_event, EVENT_DONE_SEG)) {
+            CLRBIT(local_event, EVENT_DONE_SEG);
             if (idx <= DIGISIZE) {
                 UChar ch = seg_vals[(UInt) idx - 1];
                 UCA1_emit(idx, ch);
@@ -122,8 +142,10 @@ GLOBAL Void get_bcd_cnt(Void) {
 
 GLOBAL Void UART_Handler(Void) {
 
-    if(Event_tst(EVENT_RXD)) {
-        Event_clr(EVENT_RXD);
+    TEvent local_event = get_events(0x00C0);
+
+    if(TSTBIT(local_event, EVENT_RXD)) {
+        CLRBIT(local_event, EVENT_RXD);
         seg_vals[0] = rx_buf[3] - '0';
         seg_vals[1] = rx_buf[2] - '0';
         seg_vals[2] = rx_buf[1] - '0';
@@ -131,8 +153,8 @@ GLOBAL Void UART_Handler(Void) {
         Event_set(EVENT_UPDATE_SEG);
     }
 
-    if(Event_tst(EVENT_TXD)) {
-        Event_clr(EVENT_TXD);
+    if(TSTBIT(local_event, EVENT_TXD)) {
+        CLRBIT(local_event, EVENT_TXD);
         get_bcd_cnt();
         UCA0_printf(bcd_uart);
     }
@@ -142,8 +164,10 @@ GLOBAL Void UART_Handler(Void) {
 
 GLOBAL Void Error_Handler(Void) {
 
-    if(Event_tst(EVENT_ERR)) {
-        Event_clr(EVENT_ERR);
+    TEvent local_event = get_events(0x8000);
+
+    if(TSTBIT(local_event, EVENT_ERR)) {
+        CLRBIT(local_event, EVENT_ERR);
 
         // error handling
         if       (error == BREAK_ERROR) {
