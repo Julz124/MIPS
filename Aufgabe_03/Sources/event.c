@@ -39,3 +39,10 @@ GLOBAL Bool Event_tst(TEvent arg) {
 GLOBAL Bool Event_err(Void) {
    return (errflg NE NO_EVENTS);
 }
+
+#pragma FUNC_ALWAYS_INLINE(get_events)
+GLOBAL TEvent get_events(UInt mask) {
+   TEvent tmp_event = event AND mask;
+   event = event XOR tmp_event;
+   return tmp_event;
+}

@@ -10,7 +10,6 @@
 // data type of a constant function pointer
 typedef Void (* VoidFunc)(Void);
 
-LOCAL Int   pattern_cnt;            // counter for blink pattern from task 1
 LOCAL UChar *seg_val;           // identify the external BCD Button that was pressed
 LOCAL UChar seg_vals[DIGISIZE];      // BCD counter
 LOCAL Char  bcd_uart[DIGISIZE + 3]; // BCD counter array for UART TX (2 additional chars for '\r' and '\n')
@@ -19,8 +18,10 @@ LOCAL UChar state;               // function pointer to the current state functi
 LOCAL UChar idx;                     // index for the BCD counter
 
 LOCAL UInt error;                   // error variable for UART
+LOCAL TEvent local_event;
 
 // ---------------------------------------------------------------------------- Button Handling
+
 
 static void BCD_Button_Handler(TEvent arg, UChar bcd_button){
     if(Event_tst(arg)) {
@@ -32,23 +33,19 @@ static void BCD_Button_Handler(TEvent arg, UChar bcd_button){
 
 GLOBAL Void Button_Handler(Void) {
 
-    if (Event_tst(EVENT_BTN2)) {
-        Event_clr(EVENT_BTN2);
-        if (++pattern_cnt GT MUSTER6) {
-            pattern_cnt = MUSTER1;
-         }
-         set_blink_muster(pattern_cnt);
-    }
+    local_event = get_events(0x003F);
 
-    if (Event_tst(EVENT_BTN1)) {
-        Event_clr(EVENT_BTN1);
+    if (local_event AND EVENT_BTN1) {
+        local_event = local_event XOR EVENT_BTN1;
         TGLBIT(P2OUT, BIT7);
     }
 
+    /*
     BCD_Button_Handler(EVENT_BTN3, 0);
     BCD_Button_Handler(EVENT_BTN4, 1);
     BCD_Button_Handler(EVENT_BTN5, 2);
     BCD_Button_Handler(EVENT_BTN6, 3);
+    */
 
 }
 
@@ -84,8 +81,8 @@ GLOBAL Void Number_Handler(Void) {
     }
 }
 
-// ---------------------------------------------------------------------------- BCD Handling
 
+// ---------------------------------------------------------------------------- BCD Handling
 
 GLOBAL Void AS1108_Handler(Void) {
     if (state == 0) {
@@ -171,11 +168,10 @@ GLOBAL Void set_error(UChar err) {
 // ---------------------------------------------------------------------------- Initialisation
 
 GLOBAL Void Handler_init(Void) {
-    pattern_cnt = MUSTER1;  // Should not be changed (because of initialisation)
-    state = 0;         // initial state
-    idx = 1;                // initial index
+    state = 0;
+    idx = 1;
     
-    seg_vals[0] = 0;         // initial BCD counter
+    seg_vals[0] = 0;
     seg_vals[1] = 0;
     seg_vals[2] = 0;
     seg_vals[3] = 0;
