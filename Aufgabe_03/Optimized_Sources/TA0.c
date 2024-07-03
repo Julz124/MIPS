@@ -31,14 +31,14 @@ GLOBAL Void TA0_init(Void) {
   cnt_led = 0;
   req_pattern_index = 0;
   state_index = 0;
-  SETBIT(P1OUT, BIT2);
+
 }
 
 // Timer A0 interrupt service routine
 #pragma vector = TIMER0_A1_VECTOR
 __interrupt Void TIMER0_A1_ISR(Void) {
   // Blink pattern array
-  LOCAL const UChar blink_pattern[] = {2, 8, 0, 1, 1, 0, 2, 2, 6, 0, 2,
+  LOCAL const UChar blink_pattern[] = {8, 2, 0, 1, 1, 0, 2, 2, 6, 0, 2,
                                        2, 2, 2, 6, 0, 2, 2, 2, 2, 2, 2, 6, 0};
 
   // Blink pattern pointer array
@@ -51,7 +51,6 @@ __interrupt Void TIMER0_A1_ISR(Void) {
       blink_pattern[(uint16_t) blink_ptr_arr[pattern_index] + state_index];
 
   if (cnt_led == cur_pattern_val) {
-
     TGLBIT(P1OUT, BIT2); // Toggle the LED
     cnt_led = 0;
     state_index++;
@@ -59,7 +58,6 @@ __interrupt Void TIMER0_A1_ISR(Void) {
     // Check if the next pattern value is 0, indicating the end of the pattern
     if (blink_pattern[(uint16_t) blink_ptr_arr[pattern_index] + state_index] == 0) {
       state_index = 0;
-      CLRBIT(P1OUT, BIT2);
       pattern_index = req_pattern_index; // Update the pattern index
     }
   }

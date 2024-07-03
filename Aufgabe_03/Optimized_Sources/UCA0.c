@@ -54,7 +54,6 @@ __interrupt Void UCA0_ISR(Void) {
          }
 
          if (TSTBIT(UCA0STATW, UCRXERR)) {
-            set_error(FROVPAR_ERROR);
             Char ch = UCA0RXBUF;
             return;
          }
@@ -68,6 +67,7 @@ __interrupt Void UCA0_ISR(Void) {
             } else {
                i = 0;
                set_error(BUFFER_ERROR);
+               return;
             }
          } else if (ch EQ '\r'){
             if(i == DIGISIZE){
@@ -78,10 +78,12 @@ __interrupt Void UCA0_ISR(Void) {
             } else {
                i = 0;
                set_error(BUFFER_ERROR);
+               return;
             }
          } else {
             i = 0;
             set_error(CHARACTOR_ERROR);
+            return;
          }
 
          __low_power_mode_off_on_exit();

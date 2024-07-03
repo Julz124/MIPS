@@ -116,10 +116,8 @@ GLOBAL Void Error_Handler(Void) {
 
 #pragma FUNC_ALWAYS_INLINE(set_error)
 GLOBAL Void set_error(UChar err) {
-  if (err == NO_ERROR || error > err) {
-    error = err;
-    Event_set(EVENT_ERR);
-  }
+  error = err;
+  Event_set(EVENT_ERR);
 }
 
 #pragma FUNC_ALWAYS_INLINE(Handler_init)
